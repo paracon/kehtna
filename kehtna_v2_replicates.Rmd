@@ -1,0 +1,795 @@
+---
+title: "Kehtna - Statistical analysis Nov 2017"
+author: "Jordi Escuer"
+date: "16 de noviembre de 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+rm(list = ls())   # this removes all the objects in ls()
+
+.rs.restartR()    # restart R using 
+
+rm(pca.kehna_all) # remove an element
+
+
+```{r}
+
+```
+
+
+```{r}
+library(tidyverse)
+library(viridis)
+#library(lubridate)
+
+```
+
+```{r}
+
+# DECIMAL SEPARATOR ',' NOT '.'
+
+kehtna_fluxes <- read_csv2("C:/Users/Z/Google Drive/PhD/KEHTNA/kehtna_fluxes.csv") # 5 Replicates version
+kehtna_field  <- read_csv2("C:/Users/Z/Google Drive/PhD/KEHTNA/kehtna_field_data.csv")
+kehtna_muld   <- read_csv2("C:/Users/Z/Google Drive/PhD/KEHTNA/kehtna_muld_data.csv")
+kehtna_vesi   <- read_csv2("C:/Users/Z/Google Drive/PhD/KEHTNA/kehtna_vesi_data.csv")
+kehtna_clima  <- read_csv2("C:/Users/Z/Google Drive/PhD/KEHTNA/kehtna_clima_CDO6874817481649.csv")
+
+kehtna_fluxes_R2 <- read_csv2("C:/Users/Z/Google Drive/PhD/KEHTNA/kehtna_fluxes_R2.csv")
+
+```
+
+
+```{r}
+kehtna_fluxes$date2 <- as.Date(as.character(kehtna_fluxes$date), "%d-%m-%Y") # capital Y
+kehtna_field$date2  <- as.Date(as.character(kehtna_field$date), "%d-%m-%Y")
+kehtna_muld$date2   <- as.Date(as.character(kehtna_muld$date), "%d-%m-%Y")
+kehtna_vesi$date2   <- as.Date(as.character(kehtna_vesi$date), "%d-%m-%Y")
+kehtna_clima$date2  <- as.Date(as.character(kehtna_clima$date), "%d-%m-%Y")
+
+kehtna_fluxes_R2$date2 <- as.Date(as.character(kehtna_fluxes_R2$date), "%d-%m-%Y") # capital Y
+
+```
+
+
+```{r}
+
+names(kehtna_fluxes)
+names(kehtna_field)
+names(kehtna_muld)
+names(kehtna_vesi)
+names(kehtna_clima)
+
+```
+
+
+```{r}
+
+#ADJUSTED-R2 Heatmap
+
+library(reshape)
+
+kehtna_fluxes_R2 <- as.data.frame(kehtna_fluxes_R2)
+melted_kehtna_fluxes_R2_plot1 <- melt(kehtna_fluxes_R2[kehtna_fluxes_R2$plot=="1",], id.vars = c("date2", "chamber"), measure.vars = "R2CO2")
+
+library(ggplot2)
+
+
+#ggplot(data = melted_kehtna_fluxes_R2, aes(x=as.factor(date2), y=chamber, fill=value)) + geom_tile()
+
+
+#PLOT 1
+
+ggplot(melted_kehtna_fluxes_R2_plot1, aes(as.factor(date2), chamber)) + 
+  geom_tile(aes(fill = value), colour = "white")+
+  scale_fill_gradient(low = "yellow", high = "red")+
+  theme(axis.ticks = element_blank(), 
+               axis.text.x = element_text(
+                 angle = 330, hjust = 0),
+               axis.title = element_blank(),
+               legend.title = element_blank()
+               )
+  
+```
+
+```{r}
+
+
+kehtna_fluxes_R2 <- as.data.frame(kehtna_fluxes_R2)
+melted_kehtna_fluxes_R2_plot2 <- melt(kehtna_fluxes_R2[kehtna_fluxes_R2$plot=="2",], id.vars = c("date2", "chamber"), measure.vars = "R2CO2")
+
+
+# PLOT 2
+
+ggplot(melted_kehtna_fluxes_R2_plot2, aes(as.factor(date2), chamber)) + 
+  geom_tile(aes(fill = value), colour = "white")+
+  scale_fill_gradient(low = "yellow", high = "red")+
+  theme(axis.ticks = element_blank(), 
+               axis.text.x = element_text(
+                 angle = 330, hjust = 0),
+               axis.title = element_blank(),
+               legend.title = element_blank()
+               )
+  
+```
+
+
+```{r}
+
+boxplot(kehtna_fluxes$N2O~kehtna_fluxes$plot)
+
+```
+
+
+```{r}
+
+# FULL PERIOD
+
+t.test(N2O ~ plot, data = kehtna_fluxes)
+
+```
+
+
+```{r}
+
+# PERIOD: 05/08 - 25/08
+
+t.test(N2O ~ plot, data = kehtna_fluxes[kehtna_fluxes$date2<"2016-09-25",])
+
+```
+
+
+```{r}
+kehtna_fluxes_sel <- kehtna_fluxes[kehtna_fluxes$date2<"2016-09-25",]
+```
+
+```{r}
+t.test(N2O ~ plot, data = kehtna_fluxes_sel)
+```
+
+```{r}
+
+# PERIOD: 05/08 - 18/08
+
+t.test(N2O ~ plot, data = kehtna_fluxes[kehtna_fluxes$date2<"2016-08-18",])
+
+```
+
+
+```{r}
+
+boxplot(kehtna_fluxes_sel$N2O~kehtna_fluxes_sel$plot)
+
+```
+
+
+```{r}
+kehtna_fluxes$plot2 <- as.factor(kehtna_fluxes$plot)
+
+ggplot(kehtna_fluxes, aes(x=date2, y=CO2, fun.y="mean", colour=plot2)) +
+geom_point() +
+geom_text(aes(label=CO2), vjust=-.5)
+```
+
+
+```{r}
+
+ggplot(kehtna_fluxes, 
+       aes(x = factor(date2), y = CO2, group = as.factor(plot), color = as.factor(plot))) +
+  geom_line() +
+#  geom_vline(xintercept = ymd("2016-08-05"), linetype = 2) +
+#  geom_smooth(method = 'loess') +
+#  facet_wrap(~plot, scales = "free_y") +
+  ggtitle("CO2 (FULL PERIOD)") +
+  labs(
+    y = "CO2",
+    x = "Date"
+  ) # + scale_color_viridis(discrete = TRUE)
+```
+
+```{r}
+'''
+ggplot(kehtna_fluxes, aes(x=factor(date2), y=CO2)) + 
+  stat_summary(fun.y="mean", geom="bar")
+'''
+```
+
+```{r}
+ggplot(kehtna_fluxes,aes(x = date2,y = CO2, group = as.factor(plot), color = as.factor(plot))) +
+  geom_point() +
+  geom_smooth(span = 0.3) +
+  scale_y_continuous(limits = c(-50, 650)) +
+  ggtitle ("CO2 emissions") +
+  xlab("Date") +  ylab ("CO2 emissions (mg C m-2h-1)")
+```
+
+
+```{r}
+
+# PERIOD: 05/08 - 25/09
+
+boxplot(kehtna_fluxes_sel$N2O[kehtna_fluxes_sel$date2<"2016-08-18"]~kehtna_fluxes_sel$plot[kehtna_fluxes_sel$date2<"2016-08-18"])
+
+```
+
+```{r}
+
+#CO2 EMISSIONS FOR SELECTED PERIOD
+
+ggplot(kehtna_fluxes_sel,aes(x = date2,y = N2O, group = as.factor(plot), color = as.factor(plot))) +
+  geom_point() +
+  geom_smooth(span = 0.3) +
+  #scale_y_continuous(limits = c(-50, 650)) +
+  ggtitle ("CO2 emissions") +
+  xlab("Date") +  ylab ("N2O emissions (mg C m-2h-1)")
+```
+
+
+
+
+```{r}
+
+ggplot(kehtna_fluxes_sel, aes(factor(date2), N2O, group = as.factor(plot), color = as.factor(plot))) +
+  geom_point() +
+  geom_smooth(span = 0.3) +
+#  geom_vline(xintercept = ymd("2016-08-05"), linetype = 2) +
+
+#  facet_wrap(~plot, scales = "free_y") +
+    ggtitle("N2O FLUX (50 days after application of manure)") +
+  labs(
+    y = "N2O",
+    x = "Date"
+  ) +
+  scale_color_viridis(discrete = TRUE)
+
+```
+
+
+
+
+#.##################################.#
+# PRINCIPAL COMPONENT ANALYSIS (PCA) #
+#.##################################.#
+
+```{r}
+
+kehtna.pc.cov <- princomp(na.omit(kehtna_fluxes[,c(5:7)]), cor=TRUE)
+summary(kehtna.pc.cov)
+#kehtna.pc.cov$sdev^2 # eigenvalues table
+
+```
+
+```{r}
+plot(kehtna.pc.cov) # eigenvalues figure
+```
+
+
+
+```{r}
+
+biplot(kehtna.pc.cov)
+
+```
+
+```{r}
+
+kehtna_all <- left_join(kehtna_fluxes, kehtna_field, by = c("date2", "plot"))
+kehtna_all <- left_join(kehtna_all, kehtna_muld[kehtna_muld$location=="kehtna",], by = c("date2", "plot"))
+kehtna_all <- left_join(kehtna_all, kehtna_vesi[kehtna_vesi$location=="kehtna",], by = c("date2", "plot"))
+# kehtna_all <- left_join(kehtna_all, kehtna_clima, by = "date2")
+
+kehtna_all <- within(kehtna_all, rm(date.x, date.y, date.x.x, date.y.y))
+kehtna_all <- within(kehtna_all, rm(location.x, location.y))
+
+# summary(kehtna_all)
+
+```
+
+
+
+```{r}
+
+# names(kehtna_all)
+
+# sapply(kehtna_all, class)
+
+# [1] "plot" [2] "treatment" [3] "chamber" [4] "CO2" [5] "N2O" [6] "CH4" [7] "date2" [8] "Discharge"
+# [9] "Thermometer"  [10] "Temp4" [11]  "Temp1" [12] "Temp2" [13] "Temp3" [14] "Moisture_EC" [15] "Moisture" 
+# [16] "Temp" [17] "EC" [18] "Jrk.nr." [19] "Proovi nr." [20] "Proovi nr._1" [21] "lab date" [22] "Treatment" 
+# [23] "pHKCl" [24] "KA" [25]  "NO3-N.x" [26] "NH4-N.x" [27] "P" [28] "K" [29] "Ca" [30] "Mg" [31] "OM" 
+# [32]  "N" [33] "C" [34] "S" [35] "KA_1"  [36] "DN.x" [37]  "DIC.x" [38] "DC.x" [39]  "DOC.x" [40] "NH4-N.y" 
+# [41] "NO3-N.y" [42] "PO4-P" [43] "Total P"    [44]  "pH" [45] "TN" [46]  "TOC" [47] "DOC.y" [48] "TC" 
+# [49] "DC.y" [50] "TIC" [51] "DIC.y" [52] "DN.y"
+
+# kehtna_all[,c((4:6),10,15,17,(21:47))] ### (CO2 N2O CH4), Temp4, Moisture, EC, pHKCl KA NO3-N.x NH4-N.x P K Ca Mg OM N C S KA2 DN.x DIC.x DC.x DOC.x NH4-N.y NO3-N.y PO4-P Total P pH TN TOC DOC.y TC DC.y TIC DIC.y DN.y
+
+# x is 'muld' data
+# y is 'vesi' data
+
+
+kehtna_all$DIC.x <- gsub("[^0-9\\.]", "", kehtna_all$DIC.x) 
+
+kehtna_all$DIC.x<-as.numeric(kehtna_all$DIC.x)
+
+
+# sapply(kehtna_all[,c((2:4),8,13,15,(16:45))], class)
+
+sapply(kehtna_all[,c((4:6),10,15,17,23,(25:31),(40:44))], class)
+
+
+
+```
+
+```{r}
+# cor(na.omit(kehtna_all[,c((4:6),10,15,17)]), method="spearman")
+
+cor.test( ~ N2O + Temp4, 
+         data=kehtna_all,
+         method = "spearman",
+         continuity = FALSE,
+         conf.level = 0.95)
+```
+
+
+
+```{r}
+
+# ONLY FIELD DATA
+
+kehtna_all_cor <- cor(kehtna_all[,c((4:6),10,15,17)], use = "pairwise.complete.obs")
+kehtna_all_cor
+
+```
+
+```{r}
+
+# ONLY WATER ANALYSIS DATA
+
+kehtna_all_cor <- cor(kehtna_all[,c((4:6),10,15,17,23,(40:44))], use = "pairwise.complete.obs")
+kehtna_all_cor
+```
+
+```{r}
+
+# ONLY SOIL ANALYSIS DATA
+
+# names(kehtna_all[,c((4:6),10,15,17,23,(40:44))])
+
+kehtna_all_cor <- cor(kehtna_all[,c((4:6),10,15,17,23,(25:31))], use = "pairwise.complete.obs")
+kehtna_all_cor
+
+```
+
+
+
+```{r}
+
+# ONLY SOIL DATA ANALYSIS
+
+kehtna_all.pc.cov <- princomp(na.omit(kehtna_all[,c((4:6),10,15,17,23,(25:31))]), cor=TRUE)
+summary(kehtna_all.pc.cov)
+```
+
+
+```{r}
+
+# ONLY WATER DATA ANALYSIS:
+
+kehtna_all.pc.cov2 <- princomp(kehtna_all[,c((4:6),10,15,17,23,43)], cor=TRUE)
+summary(kehtna_all.pc.cov2)
+
+```
+
+```{r}
+
+kehtna_all.pc.cov2$sdev^2 # eigenvalues table
+
+```
+
+```{r}
+
+plot(kehtna_all.pc.cov2) # eigenvalues figure
+
+```
+
+```{r}
+
+biplot(kehtna_all.pc.cov2)
+
+```
+
+```{r}
+
+unclass(loadings(kehtna_all.pc.cov2)) # eigenvectors table
+
+```
+
+```{r}
+
+# kehtna_all[,c((2:4),8,13,15,(18:25))]
+
+```
+
+
+
+```{r}
+
+# WATER ANALYSIS DATA - ONLY N20
+
+kehtna_all.pc.cov3 <- princomp(na.omit(kehtna_all[,c((3),8,13,15,(33:37))]), cor=TRUE)
+
+plot(kehtna_all.pc.cov3) # eigenvalues figure
+
+```
+
+```{r}
+
+# WATER ANALYSIS DATA - ONLY N20
+
+summary(kehtna_all.pc.cov3)
+
+```
+
+```{r}
+
+biplot(kehtna_all.pc.cov3)
+
+```
+
+
+
+
+```{r}
+
+kehtna_all_plot1 <- kehtna_all[kehtna_all$plot=='1',]
+kehtna_all_plot2 <- kehtna_all[kehtna_all$plot=='2',]
+
+```
+
+
+```{r}
+kehtna_all_cor1 <- cor(kehtna_all_plot1[,c((3),8,13,15,(33:37))], use = "complete.obs")
+kehtna_all_cor2 <- cor(kehtna_all_plot2[,c((3),8,13,15,(33:37))], use = "complete.obs")
+
+library(corrplot)
+
+par(mfrow=c(1,2))
+corrplot(kehtna_all_cor1, method="square", tl.col="black", tl.cex=0.7)
+corrplot(kehtna_all_cor2, method="square", tl.col="black", tl.cex=0.7)
+```
+
+
+```{r}
+
+kehtna_all2 <- left_join(kehtna_all, kehtna_clima, by = "date2")
+
+kehtna_all2 <- within(kehtna_all2, rm(date.x, date.y, date.x.x, date.y.y))
+kehtna_all2 <- within(kehtna_all2, rm(location.x, location.y))
+
+
+kehtna_all2$PRCP2 <- gsub("[^0-9\\.]", "", kehtna_all2$PRCP) # Utilitzar PRCP.x o PRCP.y per fer-ho anar
+kehtna_all2$PRCP2<-as.numeric(kehtna_all2$PRCP2)
+
+names(kehtna_all2)
+```
+
+
+```{r}
+cor(kehtna_all2$N2O, kehtna_all2$PRCP2, use="pair")
+```
+
+```{r}
+cor(kehtna_all2$N2O, kehtna_all2$Temp4, use="pair")
+```
+
+```{r}
+cor(kehtna_all2$N2O, kehtna_all2$Moisture, use="pair")
+```
+
+```{r}
+cor(kehtna_all2$N2O, kehtna_all2$"NH4-N.x", use="pair")
+cor(kehtna_all2$N2O, kehtna_all2$"NH4-N.y", use="pair")
+```
+
+```{r}
+cor(kehtna_all2$N2O, kehtna_all2$"NH4-N.x", use="pair")
+cor(kehtna_all2$N2O, kehtna_all2$"NH4-N.y", use="pair")
+```
+
+```{r}
+
+cor(kehtna_all2$N2O, kehtna_all2$"PO4-P", use="pair")
+cor(kehtna_all2$N2O, kehtna_all2$"Total P", use="pair")
+
+```
+
+
+```{r}
+
+library(plotly)
+
+### WHY THIS DOESN'T WORK?
+
+plot_ly(kehtna_all) %>%
+  add_trace(x = ~date2, y = ~Temp4, 
+            type = 'bar', 
+            name = 'Temp4',
+            marker = list(color = '#C9EFF9'),
+            hoverinfo = "text",
+            text = ~paste(Temp4, ' in')) %>%
+  add_trace(x = ~date2, y = ~N2O, 
+            type = 'scatter', 
+            mode = 'lines', 
+            name = 'N2O flux', 
+            yaxis = 'y2',
+            line = list(color = '#45171D'),
+            hoverinfo = "text",
+            text = ~paste(N2O)) %>%
+  layout(title = 'N2O flux and Soil temperature',
+         xaxis = list(
+           title = ""),
+         yaxis = list(
+           side = 'left', 
+           title = 'Temp4', 
+           showgrid = FALSE, 
+           zeroline = FALSE),
+         yaxis2 = list(
+           side = 'right', 
+           overlaying = "y", 
+           title = 'N2O flux', 
+           showgrid = FALSE, 
+           zeroline = FALSE))
+
+```
+
+```{r}
+
+kehtna_all_sel <- kehtna_all[kehtna_all$date2<"2016-09-25",]
+
+# summary(kehtna_all[,c(1,(2:4),8,13,15,(33:37))])
+# summary(kehtna_all_sel[,c(1,(2:4),8,13,15,(33:37))])
+
+```
+
+```{r}
+
+kehtna_all_sel_plot1 <- kehtna_all_sel[kehtna_all$plot=='1',]
+kehtna_all_sel_plot2 <- kehtna_all_sel[kehtna_all$plot=='2',]
+
+```
+
+
+```{r}
+
+kehtna_all_sel_plot1[,c((3),8,13,15,(33:37))]
+
+kehtna_all_sel_cor1 <- cor(kehtna_all_sel_plot1[,c((3),8,13,15,(33:37))], use = "complete.obs")
+kehtna_all_sel_cor2 <- cor(kehtna_all_sel_plot2[,c((3),8,13,15,(33:37))], use = "complete.obs")
+
+library(corrplot)
+
+par(mfrow=c(1,2))
+
+corrplot(kehtna_all_sel_cor1, method="square", tl.col="black", tl.cex=0.7)
+corrplot(kehtna_all_sel_cor2, method="square", tl.col="black", tl.cex=0.7)
+
+```
+
+```{r}
+
+par(mfrow=c(2,2))
+
+corrplot(kehtna_all_cor1, method="square", tl.col="black", tl.cex=0.7, title="Plot 1 - All data")
+corrplot(kehtna_all_cor2, method="square", tl.col="black", tl.cex=0.7, title="Plot 2 - All data")
+
+corrplot(kehtna_all_sel_cor1, method="square", tl.col="black", tl.cex=0.7, title="Plot 1 - Sel data")
+corrplot(kehtna_all_sel_cor2, method="square", tl.col="black", tl.cex=0.7, title="Plot 2 - Sel data")
+
+```
+
+
+
+```{r}
+kehtna_all_sel.pc.cov2 <- princomp(na.omit(kehtna_all[,c((2:4),8,(13:15),19,29,38)]), cor=TRUE)
+summary(kehtna_all_sel.pc.cov2)
+```
+
+```{r}
+kehtna_all_sel.pc.cov2$sdev^2 # eigenvalues table
+```
+
+```{r}
+plot(kehtna_all_sel.pc.cov2) # eigenvalues figure
+```
+
+```{r}
+biplot(kehtna_all_sel.pc.cov2)
+```
+
+```{r}
+
+#GHG FLUXES AND SOIL FIELD DATA
+
+kehtna_all_sel_plot1.pc.cov2 <- princomp(na.omit(kehtna_all_sel_plot1[,c((2:4),8,13,15)]), cor=TRUE)
+kehtna_all_sel_plot2.pc.cov2 <- princomp(na.omit(kehtna_all_sel_plot2[,c((2:4),8,13,15)]), cor=TRUE)
+
+par(mfrow=c(1,2))
+biplot(kehtna_all_sel_plot1.pc.cov2)
+biplot(kehtna_all_sel_plot2.pc.cov2)
+
+```
+
+```{r}
+
+# WATER DATA - ONLY N2O
+
+kehtna_all_sel_plot1.pc.cov2 <- princomp(na.omit(kehtna_all_sel_plot1[,c(3,8,13,15,18,19)]), cor=TRUE)
+kehtna_all_sel_plot2.pc.cov2 <- princomp(na.omit(kehtna_all_sel_plot2[,c(3,8,13,15,18,19)]), cor=TRUE)
+
+par(mfrow=c(1,2))
+biplot(kehtna_all_sel_plot1.pc.cov2)
+biplot(kehtna_all_sel_plot2.pc.cov2)
+```
+
+
+```{r}
+
+# FIELD DATA PARAMETERS:
+
+kehtna_all.pc.cov2 <- princomp(na.omit(kehtna_all[,c((2:4),8,13,15)]), cor=TRUE)
+kehtna_all_sel.pc.cov2 <- princomp(na.omit(kehtna_all_sel[,c((2:4),8,13,15)]), cor=TRUE)
+
+par(mfrow=c(1,2))
+biplot(kehtna_all.pc.cov2)
+biplot(kehtna_all_sel.pc.cov2)
+
+```
+
+
+```{r}
+
+# WATER DATA
+
+kehtna_all.pc.cov22 <- princomp(na.omit(kehtna_all[,c((2:4),8,(13:15),(18:19),29,38)]), cor=TRUE)
+kehtna_all_sel.pc.cov22 <- princomp(na.omit(kehtna_all_sel[,c((2:4),8,(13:15),(18:19),29,38)]), cor=TRUE)
+
+par(mfrow=c(1,2))
+biplot(kehtna_all.pc.cov22)
+biplot(kehtna_all_sel.pc.cov22)
+
+
+```
+
+
+```{r}
+
+# FIELD AND WATER DATA
+
+# names(kehtna_all)
+# names(kehtna_all[,c(3,8,13,15,(33:35))])
+
+kehtna_all.pc.cov3 <- princomp(na.omit(kehtna_all[,c(3,8,13,15,(33:35))]), cor=TRUE)
+summary(kehtna_all.pc.cov3)
+```
+
+```{r}
+
+biplot(kehtna_all.pc.cov3)
+
+```
+
+
+
+# =====================================================================================
+# Alternatiivne PCA võimalus - pakett 'ade4' oma funktsioonidega ('dudi.pca' jm)
+# -------------------------------------------------------------------------------------
+
+
+```{r}
+
+# install.packages("ade4")
+
+library(ade4)
+
+```
+
+
+
+```{r}
+
+pca.kehtna_all <- dudi.pca(na.omit(kehtna_all[,c(3,8,13,15,(33:35))]), scale=T, scannf=F, nf=2)
+
+#windows()
+scatter(pca.kehtna_all)
+
+```
+
+```{r}
+#par(mfrow=c(1,2))
+s.corcircle(pca.kehtna_all$co, xax = 1, yax = 2) # omavektorite (e faktorlaadungite) joonis
+# s.label(pca.vaatsa_all$li, xax = 1, yax = 2) # skooride joonis
+```
+
+```{r}
+
+# FIELD DATA
+
+pca.kehtna_all2 <- dudi.pca(na.omit(kehtna_all[,c(3,8,13,15)]), scale=T, scannf=F, nf=2)
+#windows()
+#scatter(pca.vaatsa_all2)
+s.corcircle(pca.kehtna_all2$co, xax = 1, yax = 2) # omavektorite (e faktorlaadungite) joonis
+```
+
+
+
+```{r}
+# WATER DATA
+
+pca.kehtna_all3 <- dudi.pca(na.omit(kehtna_all[,c(3,8,(33:35))]), scale=T, scannf=F, nf=2)
+#windows()
+#scatter(pca.vaatsa_all2)
+s.corcircle(pca.kehtna_all3$co, xax = 1, yax = 2) # omavektorite (e faktorlaadungite) joonis
+```
+
+```{r}
+
+#names(kehtna_all_sel)
+
+```
+
+```{r}
+
+pca.kehtna_all4     <- dudi.pca(na.omit(kehtna_all[,c(3,8,13,15,(33:35))]), scale=T, scannf=F, nf=2)
+pca.kehtna_all_sel3 <- dudi.pca(na.omit(kehtna_all_sel[,c(3,8,13,15,(33:35))]), scale=T, scannf=F, nf=2)
+
+par(mfrow=c(1,2))
+s.corcircle(pca.kehtna_all4$co, xax = 1, yax = 2) # eigenvectors figure (e-factor drives)
+s.corcircle(pca.kehtna_all_sel3$co, xax = 1, yax = 2) # eigenvectors figure (e-factor drives)
+
+#KEHTNA_ALL VS KEHTNA_ALL_SEL
+
+```
+
+```{r}
+
+s.corcircle(pca.kehtna_all4$co, xax = 1, yax = 2) # eigenvectors figure
+
+```
+
+```{r}
+
+s.corcircle(pca.kehtna_all_sel3$co, xax = 1, yax = 2) # eigenvectors figure
+
+```
+
+
+```{r}
+
+#PLOT 1 VS PLOT 2
+
+pca.kehtna_all_sel_plot1 <- dudi.pca(na.omit(kehtna_all_sel_plot1[,c(3,8,13,15,(33:35))]), scale=T, scannf=F, nf=2)
+pca.kehtna_all_sel_plot2 <- dudi.pca(na.omit(kehtna_all_sel_plot2[,c(3,8,13,15,(33:35))]), scale=T, scannf=F, nf=2)
+
+par(mfrow=c(1,2))
+
+s.corcircle(pca.kehtna_all_sel_plot2$co, xax = 1, yax = 2) # eigenvectors figure
+s.corcircle(pca.kehtna_all_sel_plot1$co, xax = 1, yax = 2) # eigenvectors figure
+```
+
+
+```{r}
+
+# PLOT 1 VS PLOT 2
+
+par(mfrow=c(1,2))
+scatter(pca.kehtna_all_sel_plot1)
+scatter(pca.kehtna_all_sel_plot2)
+
+```
+
+
+
