@@ -1,0 +1,32 @@
+---
+title: "CASE STUDY: N2O emissions of a Winter Rapeseed field with dairy manure application in Central Estonia - Preliminary Results"
+author: "Jordi Escuer Gatius"
+date: "16 de noviembre de 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+Estonian University of Life Sciences
+
+jordi.escuer@emu.edu
+
+
+
+
+
+
+
+
+![](figures/location.png)
+
+
+![](figures/location2.png)
+
+![](figures/method.png)
+
+![](figures/sampling.png)
+
+![](figures/calculation.png)
+
