@@ -1,0 +1,28 @@
+---
+title: "Kehtna - Statistical analysis Nov 2017"
+author: "Jordi Escuer"
+date: "16 de noviembre de 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+CASE STUDY:"N2O emissions of a Winter Rapeseed field with dairy manure applicationin Central Estonia - Preliminary Results""
+Jordi Escuer Gatius *1
+1Estonian University of Life Sciences
+
+*jordi.escuer@emu.edu
+
+![optional caption text](figures/location.png)
+
+
+![optional caption text](figures/location2.png)
+
+![optional caption text](figures/method.png)
+
+![optional caption text](figures/sampling.png)
+
+![optional caption text](figures/calculation.png)
+
