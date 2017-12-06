@@ -1,0 +1,309 @@
+---
+title: "Kehtna - Statistical analysis Nov 2017"
+author: "Jordi Escuer"
+date: "16 de noviembre de 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(tidyverse)
+library(viridis)
+library(car) # vif
+library(corrplot) # corrplot
+library(nlme) # "Linear mixed-effects model"
+library(lme4) # lmer
+
+```
+
+```{r}
+
+# DECIMAL SEPARATOR ',' NOT '.'
+
+kehtna_fluxes <- read_csv2("./data/kehtna_fluxes.csv") # 5 Replicates version
+kehtna_field  <- read_csv2("./data/kehtna_field_data.csv")
+kehtna_muld   <- read_csv2("./data/kehtna_muld_data_full.csv")
+kehtna_vesi   <- read_csv2("./data/kehtna_vesi_data_full.csv")
+kehtna_clima  <- read_csv2("./data/kehtna_clima.csv")
+
+# kehtna_fluxes_R2 <- read_csv2("./data/kehtna_fluxes_R2.csv")
+
+```
+
+
+```{r}
+
+kehtna_fluxes$date2 <- as.Date(as.character(kehtna_fluxes$date), "%d-%m-%Y") # capital Y
+kehtna_field$date2  <- as.Date(as.character(kehtna_field$date), "%d-%m-%Y")
+kehtna_muld$date2   <- as.Date(as.character(kehtna_muld$date), "%d-%m-%Y")
+kehtna_vesi$date2   <- as.Date(as.character(kehtna_vesi$date), "%d-%m-%Y")
+kehtna_clima$date2  <- as.Date(as.character(kehtna_clima$date), "%d-%m-%Y")
+
+#kehtna_fluxes_R2$date2 <- as.Date(as.character(kehtna_fluxes_R2$date), "%d-%m-%Y") # capital Y
+
+```
+
+
+```{r}
+
+kehtna_all <- left_join(kehtna_fluxes, kehtna_field, by = c("date2", "plot"))
+kehtna_all <- left_join(kehtna_all, kehtna_muld, by = c("date2", "plot"))
+kehtna_all <- left_join(kehtna_all, kehtna_vesi, by = c("date2", "plot"))
+# kehtna_all <- left_join(kehtna_all, kehtna_clima, by = "date2")
+
+kehtna_all <- within(kehtna_all, rm(date.x, date.y, date.x.x, date.y.y))
+kehtna_all <- within(kehtna_all, rm(location.x, location.y))
+
+# names(kehtna_all)
+
+sapply(kehtna_all, class)
+
+```
+Characters:
+  treatment
+  chamber
+  N
+
+```{r}
+
+# [1] "plot" [2] "treatment" [3] "chamber" [4] "CO2" [5] "N2O" [6] "CH4" [7] "date2" [8] "Discharge"
+# [9] "Thermometer"  [10] "Temp4" [11]  "Temp1" [12] "Temp2" [13] "Temp3" [14] "Moisture_EC" [15] "Moisture" 
+# [16] "Temp" [17] "EC" [18] "Jrk.nr." [19] "Proovi nr." [20] "Proovi nr._1" [21] "lab date" [22] "Treatment" 
+# [23] "pHKCl" [24] "KA" [25]  "NO3-N.x" [26] "NH4-N.x" [27] "P" [28] "K" [29] "Ca" [30] "Mg" [31] "OM" 
+# [32]  "N" [33] "C" [34] "S" [35] "KA_1"  [36] "DN.x" [37]  "DIC.x" [38] "DC.x" [39]  "DOC.x" [40] "NH4-N.y" 
+# [41] "NO3-N.y" [42] "PO4-P" [43] "Total P"    [44]  "pH" [45] "TN" [46]  "TOC" [47] "DOC.y" [48] "TC" 
+# [49] "DC.y" [50] "TIC" [51] "DIC.y" [52] "DN.y"
+
+# kehtna_all[,c((4:6),10,15,17,(21:47))] ### (CO2 N2O CH4), Temp4, Moisture, EC, pHKCl KA NO3-N.x NH4-N.x P K Ca Mg OM N C S KA2 DN.x DIC.x DC.x DOC.x NH4-N.y NO3-N.y PO4-P Total P pH TN TOC DOC.y TC DC.y TIC DIC.y DN.y
+
+# x is 'muld' data
+# y is 'vesi' data
+
+
+kehtna_all$DIC.x <- gsub("[^0-9\\.]", "", kehtna_all$DIC.x)
+
+kehtna_all$DIC.x<-as.numeric(kehtna_all$DIC.x)
+
+kehtna_all$N<-as.numeric(kehtna_all$N)
+
+# sapply(kehtna_all[,c((2:4),8,13,15,(16:45))], class)
+
+sapply(kehtna_all[,c((4:6),10,15,17,23,(25:31),(40:44))], class)
+
+```
+
+```{r}
+
+kehtna_fluxes_sel <- kehtna_fluxes[kehtna_fluxes$date2<"2016-09-25",]
+
+```
+
+```{r}
+#kehtna_all <- rename(kehtna_all, NO3_N.x = 'NO3-N.x')
+#kehtna_all <- rename(kehtna_all, NH4_N.x = 'NH4-N.x')
+
+#kehtna_all <- rename(kehtna_all, NO3_N.y = 'NO3-N.y')
+#kehtna_all <- rename(kehtna_all, NH4_N.y = 'NH4-N.y')
+
+#kehtna_all <- rename(kehtna_all, PO4_P = 'PO4-P')
+
+```
+
+
+
+#.###################.#
+# REGRESSION ANALYSIS #
+#.###################.#
+
+
+Regmodel.1 will include soil temperature and soil moisture
+
+```{r}
+N2O.Regmodel.1 <- lm(N2O~Moisture+Temp4, data=kehtna_all)
+summary(N2O.Regmodel.1)
+```
+
+Moisture has a high p-value.
+
+
+
+```{r}
+CO2.Regmodel.1 <- lm(CO2~Moisture+Temp4, data=kehtna_all)
+summary(CO2.Regmodel.1)
+```
+
+```{r}
+CH4.Regmodel.1 <- lm(CH4~Moisture+Temp4, data=kehtna_all)
+summary(CH4.Regmodel.1)
+```
+
+```{r}
+N2O.Regmodel.2 <- lm(N2O~pHKCl+KA+NO3_N.x+NH4_N.x+P+K+Ca+Mg+OM+N+C+S+KA+DN.x+DIC.x+DC.x+DOC.x, data=kehtna_all) # Can be 'KA_1'
+summary(N2O.Regmodel.2)
+
+```
+
+```{r}
+N2O.Regmodel.22 <- lm(N2O~pHKCl+KA+NO3_N.x+NH4_N.x+P+K+Ca+Mg+OM+C+S, data=kehtna_all)
+summary(N2O.Regmodel.22)
+```
+
+```{r}
+qqnorm(resid(N2O.Regmodel.22))
+```
+
+It's heavy tailed.
+
+```{r}
+N2O.Regmodel.23 <- lm(N2O~pHKCl+NO3_N.x+NH4_N.x+P, data=kehtna_all)
+summary(N2O.Regmodel.23)
+```
+
+```{r}
+par(mfrow = c(2,2))
+plot(N2O.Regmodel.23)
+```
+
+```{r}
+qqnorm(resid(N2O.Regmodel.23))
+```
+
+
+Variance-inflation factors:
+
+```{r}
+
+vif(N2O.Regmodel.23)
+
+```
+
+if multicollinearity is too big and at least one argument should be omitted.
+we have to keep the arguments with bigger correlation
+
+```{r}
+N2O.Regmodel.24 <- lm(N2O~pHKCl+NO3_N.x+NH4_N.x+P+N+OM, data=kehtna_all)
+summary(N2O.Regmodel.24)
+```
+
+```{r}
+N2O.Regmodel.25 <- lm(N2O~pHKCl+NO3_N.x+NH4_N.x+OM, data=kehtna_all)
+summary(N2O.Regmodel.25)
+```
+
+
+
+FOR THE TWO PLOTS:
+
+```{r}
+#kehtna_all_plot1 <- kehtna_all[kehtna_all$plot=='1',]
+#kehtna_all_plot2 <- kehtna_all[kehtna_all$plot=='2',]
+```
+
+
+```{r}
+N2O.Regmodel.23_plot1 <- lm(N2O~pHKCl+NO3_N.x+NH4_N.x+P, data=kehtna_all[kehtna_all$plot=="1",])
+summary(N2O.Regmodel.23_plot1)
+```
+
+```{r}
+N2O.Regmodel.23_plot2 <- lm(N2O~pHKCl+NO3_N.x+NH4_N.x+P, data=kehtna_all[kehtna_all$plot=="2",])
+summary(N2O.Regmodel.23_plot2)
+```
+
+```{r}
+kehtna_all_sel <- kehtna_all[kehtna_all$date2<"2016-09-25",]
+```
+
+
+```{r}
+# WE SELECT THE PERIOD WITHOUT VIZURA EFFECT
+
+kehtna_all_inv_sel <- kehtna_all[kehtna_all$date2>"2016-09-25",]
+
+N2O.Regmodel.23_inv_sel <- lm(N2O~pHKCl+NO3_N.x+NH4_N.x+P, data=kehtna_all_inv_sel)
+summary(N2O.Regmodel.23_inv_sel)
+
+```
+
+```{r}
+
+kehtna_all_cor3 <- cor(kehtna_all_inv_sel[,c((4:6),10,15,17,18,(20:22),(35:38))], use = "complete.obs")
+
+corrplot(kehtna_all_cor3, method="circle") # type="upper"
+
+```
+
+```{r}
+N2O.Regmodel.232_inv_sel <- lm(N2O~pHKCl+NO3_N.x+P, data=kehtna_all_inv_sel)
+summary(N2O.Regmodel.232_inv_sel)
+```
+
+```{r}
+anova(N2O.Regmodel.232_inv_sel)
+```
+
+
+```{r}
+N2O.Regmodel.233_inv_sel <- lm(N2O~pHKCl+NO3_N.x+NH4_N.y, data=kehtna_all_inv_sel) # + pHKCl:NO3_N.x + pHKCl:NH4_N.y
+summary(N2O.Regmodel.233_inv_sel)
+```
+
+```{r}
+N2O.Regmodel.234_inv_sel <- lm(N2O~NO3_N.x+NH4_N.y, data=kehtna_all_inv_sel) # + pHKCl:NO3_N.x + pHKCl:NH4_N.y
+summary(N2O.Regmodel.234_inv_sel)
+```
+
+```{r}
+N2O.Regmodel.235_inv_sel <- lm(N2O~pHKCl+NO3_N.x+P+NH4_N.y, data=kehtna_all_inv_sel) # + pHKCl:NO3_N.x + pHKCl:NH4_N.y
+summary(N2O.Regmodel.235_inv_sel)
+```
+
+```{r}
+anova(N2O.Regmodel.235_inv_sel)
+```
+
+
+```{r}
+
+qqnorm(resid(N2O.Regmodel.232_inv_sel))
+```
+
+```{r}
+N2O.Regmodel.sel_plot <- lm(N2O~as.factor(plot), data=kehtna_all_sel)
+summary(N2O.Regmodel.sel_plot)
+```
+
+
+
+
+
+```{r}
+plot(CO2 ~ Temp4, data=kehtna_all_inv_sel)
+```
+
+
+```{r}
+plot(N2O ~ Temp4, data=kehtna_all_inv_sel)
+```
+
+```{r}
+plot(CH4 ~ Temp4, data=kehtna_all_inv_sel)
+```
+
+```{r}
+plot(CO2 ~ Moisture, data=kehtna_all_inv_sel)
+```
+
+```{r}
+plot(N2O ~ Moisture, data=kehtna_all_inv_sel)
+```
+
+```{r}
+
+plot(CH4 ~ Moisture, data=kehtna_all_inv_sel)
+```
+

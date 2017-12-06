@@ -1,0 +1,305 @@
+---
+title: "Kehtna - Statistical analysis Nov 2017"
+author: "Jordi Escuer"
+date: "16 de noviembre de 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(tidyverse)
+library(viridis)
+library(dplyr)
+library(reshape)
+library(ggplot2)
+library(ggpubr) # ggboxplot
+
+```
+
+```{r}
+
+# DECIMAL SEPARATOR ',' NOT '.'
+
+kehtna_fluxes <- read_csv2("./data/kehtna_fluxes.csv") # 5 Replicates version
+kehtna_field  <- read_csv2("./data/kehtna_field_data.csv")
+kehtna_muld_full   <- read_csv2("./data/kehtna_muld_data_full.csv")
+kehtna_vesi_full   <- read_csv2("./data/kehtna_vesi_data_full.csv")
+kehtna_clima  <- read_csv2("./data/kehtna_clima.csv")
+
+kehtna_fluxes_R2 <- read_csv2("./data/kehtna_fluxes_R2.csv")
+
+```
+
+
+```{r}
+
+kehtna_fluxes$date2 <- as.Date(as.character(kehtna_fluxes$date), "%d-%m-%Y") # capital Y
+kehtna_field$date2  <- as.Date(as.character(kehtna_field$date), "%d-%m-%Y")
+kehtna_muld_full$date2   <- as.Date(as.character(kehtna_muld_full$date), "%d-%m-%Y")
+kehtna_vesi_full$date2   <- as.Date(as.character(kehtna_vesi_full$date), "%d-%m-%Y")
+kehtna_clima$date2  <- as.Date(as.character(kehtna_clima$date), "%d-%m-%Y")
+
+kehtna_fluxes_R2$date2 <- as.Date(as.character(kehtna_fluxes_R2$date), "%d-%m-%Y") # capital Y
+
+```
+
+```{r}
+
+kehtna_all <- left_join(kehtna_fluxes, kehtna_field, by = c("date2", "plot"))
+kehtna_all <- left_join(kehtna_all, kehtna_muld_full[kehtna_muld_full$location=="kehtna",], by = c("date2", "plot"))
+kehtna_all <- left_join(kehtna_all, kehtna_vesi_full[kehtna_vesi_full$location=="kehtna",], by = c("date2", "plot"))
+# kehtna_all <- left_join(kehtna_all, kehtna_clima, by = "date2")
+
+kehtna_all <- within(kehtna_all, rm(date.x, date.y, date.x.x, date.y.y))
+kehtna_all <- within(kehtna_all, rm(location.x, location.y))
+
+# summary(kehtna_all)
+
+```
+
+```{r}
+#kehtna_all <- rename(kehtna_all, NO3_N.x = 'NO3-N.x')
+#kehtna_all <- rename(kehtna_all, NH4_N.x = 'NH4-N.x')
+
+#kehtna_all <- rename(kehtna_all, NO3_N.y = 'NO3-N.y')
+#kehtna_all <- rename(kehtna_all, NH4_N.y = 'NH4-N.y')
+
+#kehtna_all <- rename(kehtna_all, PO4_P = 'PO4-P')
+
+```
+
+```{r}
+
+# names(kehtna_all)
+
+# sapply(kehtna_all, class)
+
+# [1] "plot" [2] "treatment" [3] "chamber" [4] "CO2" [5] "N2O" [6] "CH4" [7] "date2" [8] "Discharge"
+# [9] "Thermometer"  [10] "Temp4" [11]  "Temp1" [12] "Temp2" [13] "Temp3" [14] "Moisture_EC" [15] "Moisture" 
+# [16] "Temp" [17] "EC" [18] "Jrk.nr." [19] "Proovi nr." [20] "Proovi nr._1" [21] "lab date" [22] "Treatment" 
+# [23] "pHKCl" [24] "KA" [25]  "NO3-N.x" [26] "NH4-N.x" [27] "P" [28] "K" [29] "Ca" [30] "Mg" [31] "OM" 
+# [32]  "N" [33] "C" [34] "S" [35] "KA_1"  [36] "DN.x" [37]  "DIC.x" [38] "DC.x" [39]  "DOC.x" [40] "NH4-N.y" 
+# [41] "NO3-N.y" [42] "PO4-P" [43] "Total P"    [44]  "pH" [45] "TN" [46]  "TOC" [47] "DOC.y" [48] "TC" 
+# [49] "DC.y" [50] "TIC" [51] "DIC.y" [52] "DN.y"
+
+# kehtna_all[,c((4:6),10,15,17,(21:47))] ### (CO2 N2O CH4), Temp4, Moisture, EC, pHKCl KA NO3-N.x NH4-N.x P K Ca Mg OM N C S KA2 DN.x DIC.x DC.x DOC.x NH4-N.y NO3-N.y PO4-P Total P pH TN TOC DOC.y TC DC.y TIC DIC.y DN.y
+
+# x is 'muld' data
+# y is 'vesi' data
+
+
+kehtna_all$DIC.x <- gsub("[^0-9\\.]", "", kehtna_all$DIC.x) 
+
+kehtna_all$DIC.x<-as.numeric(kehtna_all$DIC.x)
+
+
+# sapply(kehtna_all[,c((2:4),8,13,15,(16:45))], class)
+
+sapply(kehtna_all[,c((4:6),10,15,17,23,(25:31),(40:44))], class)
+
+
+
+```
+
+```{r}
+ggplot(data = kehtna_fluxes, aes(x = date2, y = N2O, group = plot, colour = as.factor(plot))) +
+    geom_line()
+```
+
+```{r}
+
+# BOTH SITES COMBINED:
+
+kehtna_fluxes <- as.data.frame(kehtna_fluxes)
+melted_kehtna_fluxes <- melt(kehtna_fluxes, id.vars = c("date2", "plot"), measure.vars = c("N2O","CO2","CH4"))
+
+ggplot(data = melted_kehtna_fluxes, aes(x = date2, y = value, group = variable, colour = variable)) +
+    geom_line() +
+    facet_wrap(~ variable)
+```
+
+```{r}
+ggplot(data = melted_kehtna_fluxes, aes(x = date2, y = value, group = as.factor(plot), colour = as.factor(plot))) +
+    geom_line() +
+    facet_wrap(~ variable) # + theme(aspect.ratio=1)
+```
+
+
+```{r}
+
+boxplot(kehtna_fluxes$N2O~kehtna_fluxes$plot)
+
+```
+
+
+```{r}
+
+# FULL PERIOD
+
+t.test(N2O ~ plot, data = kehtna_fluxes)
+
+```
+
+
+```{r}
+
+# N20
+# PERIOD: 05/08 - 25/08
+
+t.test(N2O ~ plot, data = kehtna_fluxes[kehtna_fluxes$date2<"2016-09-25",])
+
+```
+
+```{r}
+
+# N20
+# PERIOD AFTER 25/08
+
+t.test(N2O ~ plot, data = kehtna_fluxes[kehtna_fluxes$date2>"2016-09-25",])
+
+```
+
+```{r}
+
+# CO2
+# PERIOD: 05/08 - 25/08
+
+t.test(CO2 ~ plot, data = kehtna_fluxes[kehtna_fluxes$date2<"2016-09-25",])
+```
+
+
+```{r}
+
+# CO2
+# PERIOD AFTER 25/08
+
+t.test(CO2 ~ plot, data = kehtna_fluxes[kehtna_fluxes$date2>"2016-09-25",])
+```
+
+```{r}
+
+# CH4
+# PERIOD: 05/08 - 25/08
+
+t.test(CH4 ~ plot, data = kehtna_fluxes[kehtna_fluxes$date2<"2016-09-25",])
+```
+
+```{r}
+
+# CH4
+# PERIOD AFTER 25/08
+
+t.test(CH4 ~ plot, data = kehtna_fluxes[kehtna_fluxes$date2>"2016-09-25",])
+```
+
+
+```{r}
+
+# SOIL (NO3_N.x)
+# PERIOD AFTER 25/08
+
+t.test(NO3_N ~ plot, data = kehtna_muld_full[kehtna_muld_full$date2>"2016-09-25",], na.action=na.omit)
+
+```
+
+
+```{r}
+kehtna_fluxes_sel <- kehtna_fluxes[kehtna_fluxes$date2<"2016-09-25",]
+```
+
+```{r}
+
+boxplot(kehtna_fluxes_sel$N2O~kehtna_fluxes_sel$plot)
+
+```
+
+
+```{r}
+kehtna_fluxes$plot2 <- as.factor(kehtna_fluxes$plot)
+
+ggplot(kehtna_fluxes, aes(x=date2, y=CO2, fun.y="mean", colour=plot2)) +
+geom_point() +
+geom_text(aes(label=CO2), vjust=-.5)
+```
+
+
+```{r}
+
+ggplot(kehtna_fluxes, 
+       aes(x = factor(date2), y = CO2, group = as.factor(plot), color = as.factor(plot))) +
+  geom_line() +
+#  geom_vline(xintercept = ymd("2016-08-05"), linetype = 2) +
+#  geom_smooth(method = 'loess') +
+#  facet_wrap(~plot, scales = "free_y") +
+  ggtitle("CO2 (FULL PERIOD)") +
+  labs(
+    y = "CO2",
+    x = "Date"
+  ) # + scale_color_viridis(discrete = TRUE)
+```
+
+
+```{r}
+ggplot(kehtna_fluxes,aes(x = date2,y = CO2, group = as.factor(plot), color = as.factor(plot))) +
+  geom_point() +
+  geom_smooth(span = 0.3) +
+  scale_y_continuous(limits = c(-50, 650)) +
+  ggtitle ("CO2 emissions") +
+  xlab("Date") +  ylab ("CO2 emissions (mg C m-2h-1)")
+```
+
+
+```{r}
+
+# PERIOD: 05/08 - 19/08
+
+boxplot(kehtna_fluxes_sel$N2O[kehtna_fluxes_sel$date2<"2016-08-19"]~kehtna_fluxes_sel$plot[kehtna_fluxes_sel$date2<"2016-08-19"])
+
+```
+
+```{r}
+# Plot weight by group and color by group
+
+ggboxplot(kehtna_all, x = "plot", y = "N2O", 
+          color = "plot", palette = c("#00AFBB", "#FF8C00"),
+        ylab = "N2O flux (?gN m-2 h-2)", xlab = "plot")
+```
+
+
+```{r}
+
+#CO2 EMISSIONS FOR SELECTED PERIOD 05/08 - 25/09
+
+ggplot(kehtna_fluxes_sel,aes(x = date2,y = N2O, group = as.factor(plot), color = as.factor(plot))) +
+  geom_point() +
+  geom_smooth(span = 0.3) +
+  #scale_y_continuous(limits = c(-50, 650)) +
+  ggtitle ("CO2 emissions") +
+  xlab("Date") +  ylab ("N2O emissions (mg C m-2h-1)")
+```
+
+
+
+
+```{r}
+
+ggplot(kehtna_fluxes_sel, aes(factor(date2), N2O, group = as.factor(plot), color = as.factor(plot))) +
+  geom_point() +
+  geom_smooth(span = 0.3) +
+#  geom_vline(xintercept = ymd("2016-08-05"), linetype = 2) +
+
+#  facet_wrap(~plot, scales = "free_y") +
+    ggtitle("N2O FLUX (50 days after application of manure)") +
+  labs(
+    y = "N2O",
+    x = "Date"
+  ) +
+  scale_color_viridis(discrete = TRUE)
+
+```
+
+
